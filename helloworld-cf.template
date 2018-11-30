@@ -1,0 +1,97 @@
+{
+    "Description": "Effective DevOps in AWS: HelloWorld web application",
+    "Outputs": {
+        "InstancePublicIp": {
+            "Description": "Public IP of the instance",
+            "Value": {
+                "Fn::GetAtt": [
+                    "instance",
+                    "PublicIp"
+                ]
+            }
+        },
+        "WebUrl": {
+            "Description": "Application endpoint",
+            "Value": {
+                "Fn::Join": [
+                    "",
+                    [
+                        "http://",
+                        {
+                            "Fn::GetAtt": [
+                                "instance",
+                                "PublicDnsName"
+                            ]
+                        },
+                        ":",
+                        "3000"
+                    ]
+                ]
+            }
+        }
+    },
+    "Parameters": {
+        "AZ": {
+            "ConstraintDescription": "Must be an existing AZ",
+            "Description": "Select an Availability Zone for the instance",
+            "Type": "AWS::EC2::AvailabilityZone::Name"
+        },
+        "KeyPair": {
+            "ConstraintDescription": "must be the name of an existing EC2 KeyPair",
+            "Description": "Name of existing EC2 KeyPair for SSH",
+            "Type": "AWS::EC2::KeyPair::KeyName"
+        }
+    },
+    "Resources": {
+        "SecurityGroup": {
+            "Properties": {
+                "GroupDescription": "Allow SSH and TCP/3000 access",
+                "SecurityGroupIngress": [
+                    {
+                        "CidrIp": "0.0.0.0/0",
+                        "FromPort": "22",
+                        "IpProtocol": "tcp",
+                        "ToPort": "22"
+                    },
+                    {
+                        "CidrIp": "0.0.0.0/0",
+                        "FromPort": "3000",
+                        "IpProtocol": "tcp",
+                        "ToPort": "3000"
+                    }
+                ]
+            },
+            "Type": "AWS::EC2::SecurityGroup"
+        },
+        "instance": {
+            "Properties": {
+                "AvailabilityZone": {
+                    "Ref": "AZ"
+                },
+                "ImageId": "ami-caaf84af",
+                "InstanceType": "t2.micro",
+                "KeyName": {
+                    "Ref": "KeyPair"
+                },
+                "SecurityGroups": [
+                    {
+                        "Ref": "SecurityGroup"
+                    }
+                ],
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Join": [
+                            "\n",
+                            [
+                                "#!/bin/bash",
+                                "sudo yum install --enablerepo=epel -y nodejs",
+                                "wget http://bit.ly/2vESNuc -O /home/ec2-user/helloworld.jswget http://bit.ly/2vVvT18 -O /etc/init/helloworld.confstart helloworld"
+                            ]
+                        ]
+                    }
+                }
+            },
+            "Type": "AWS::EC2::Instance"
+        }
+    }
+}
